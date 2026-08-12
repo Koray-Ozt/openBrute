@@ -21,3 +21,8 @@ db.json
 .env
 .env.local
 .env.*.local
+
+# AI/Customization Configurations
+CONTEXT.md
+mcp_config.json
+.agents/
