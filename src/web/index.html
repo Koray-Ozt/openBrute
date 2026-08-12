@@ -345,6 +345,12 @@
                 span.style.color = color;
             }
             logConsole.appendChild(span);
+            
+            // Limit console size to prevent memory leaks and main thread lags
+            while (logConsole.childNodes.length > 500) {
+                logConsole.removeChild(logConsole.firstChild);
+            }
+            
             logConsole.scrollTop = logConsole.scrollHeight;
         }
 
