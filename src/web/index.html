@@ -1,0 +1,460 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>openBrute Web Dashboard</title>
+    <style>
+        :root {
+            --bg-color: #0f1115;
+            --container-bg: #161a22;
+            --accent-color: #00f0ff;
+            --text-color: #e2e8f0;
+            --text-muted: #8892b0;
+            --border-color: #2a313e;
+            --success-color: #00ff66;
+            --error-color: #ff0055;
+            --warning-color: #ffaa00;
+        }
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Segoe UI', -apple-system, BlinkMacSystemFont, Roboto, sans-serif;
+        }
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-height: 100vh;
+        }
+        header {
+            width: 100%;
+            max-width: 1100px;
+            margin-bottom: 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid var(--border-color);
+            padding-bottom: 15px;
+        }
+        header h1 {
+            font-size: 24px;
+            letter-spacing: 1px;
+            background: linear-gradient(45deg, #00f0ff, #00ff66);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+        .container {
+            width: 100%;
+            max-width: 1100px;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+        }
+        @media (max-width: 900px) {
+            .container {
+                grid-template-columns: 1fr;
+            }
+        }
+        .card {
+            background-color: var(--container-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+        .form-group {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+        label {
+            font-size: 13px;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            font-weight: 600;
+        }
+        input, select, textarea {
+            background-color: var(--bg-color);
+            border: 1px solid var(--border-color);
+            border-radius: 4px;
+            color: var(--text-color);
+            padding: 10px;
+            font-size: 14px;
+            outline: none;
+            transition: border-color 0.2s;
+        }
+        input:focus, select:focus, textarea:focus {
+            border-color: var(--accent-color);
+        }
+        .row-group {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+        }
+        .btn {
+            background-color: var(--accent-color);
+            color: #000;
+            border: none;
+            border-radius: 4px;
+            padding: 12px;
+            font-size: 15px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: opacity 0.2s, transform 0.1s;
+            text-transform: uppercase;
+        }
+        .btn:hover {
+            opacity: 0.9;
+        }
+        .btn:active {
+            transform: scale(0.98);
+        }
+        .btn-stop {
+            background-color: var(--error-color);
+            color: #fff;
+        }
+        .console {
+            background-color: #07080a;
+            border: 1px solid var(--border-color);
+            border-radius: 4px;
+            padding: 12px;
+            font-family: 'Courier New', Courier, monospace;
+            font-size: 12px;
+            color: #00ff66;
+            height: 300px;
+            overflow-y: auto;
+            white-space: pre-wrap;
+        }
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 10px;
+        }
+        .stat-card {
+            background-color: var(--bg-color);
+            border: 1px solid var(--border-color);
+            border-radius: 4px;
+            padding: 10px;
+            text-align: center;
+        }
+        .stat-val {
+            font-size: 18px;
+            font-weight: bold;
+            color: var(--accent-color);
+            margin-top: 5px;
+        }
+        .hidden {
+            display: none !important;
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <h1>openBrute</h1>
+        <div style="font-size: 13px; color: var(--text-muted);">WEB INTERFACE</div>
+    </header>
+    <div class="container">
+        <!-- Configuration Card -->
+        <div class="card">
+            <div style="font-size: 16px; font-weight: bold; border-bottom: 1px solid var(--border-color); padding-bottom: 5px;">ATTACK CONFIGURATION</div>
+            
+            <div class="row-group">
+                <div class="form-group">
+                    <label for="protocol">Protocol</label>
+                    <select id="protocol">
+                        <option value="http">HTTP/HTTPS</option>
+                        <option value="ssh">SSH</option>
+                        <option value="ftp">FTP</option>
+                        <option value="smtp">SMTP</option>
+                        <option value="sql">SQL (MySQL/PgSQL)</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="target">Target Host/URL</label>
+                    <input type="text" id="target" placeholder="e.g. http://127.0.0.1/login">
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label for="input-mode">Credential Input Mode</label>
+                <select id="input-mode">
+                    <option value="manual">Single Credentials</option>
+                    <option value="lists">Separate Wordlists</option>
+                    <option value="combo">Combo File (user:pass)</option>
+                </select>
+            </div>
+
+            <!-- Single credentials inputs -->
+            <div id="group-manual" class="row-group">
+                <div class="form-group">
+                    <label for="username">Username</label>
+                    <input type="text" id="username" placeholder="admin">
+                </div>
+                <div class="form-group">
+                    <label for="password">Password</label>
+                    <input type="password" id="password" placeholder="password">
+                </div>
+            </div>
+
+            <!-- Lists inputs -->
+            <div id="group-lists" class="row-group hidden">
+                <div class="form-group">
+                    <label for="usernames-list">Usernames List (one per line)</label>
+                    <textarea id="usernames-list" rows="5" placeholder="admin&#10;user1"></textarea>
+                </div>
+                <div class="form-group">
+                    <label for="passwords-list">Passwords List (one per line)</label>
+                    <textarea id="passwords-list" rows="5" placeholder="admin123&#10;secret"></textarea>
+                </div>
+            </div>
+
+            <!-- Combo inputs -->
+            <div id="group-combo" class="form-group hidden">
+                <label for="combos-list">Combos (format: username:password per line)</label>
+                <textarea id="combos-list" rows="5" placeholder="admin:admin123&#10;guest:pass"></textarea>
+            </div>
+
+            <!-- HTTP options -->
+            <div id="http-options" class="card" style="padding: 10px; margin-top: 5px;">
+                <div style="font-size: 13px; font-weight: bold; color: var(--accent-color);">HTTP OPTIONS</div>
+                <div class="row-group">
+                    <div class="form-group">
+                        <label for="http-mode">HTTP Mode</label>
+                        <select id="http-mode">
+                            <option value="basic">Basic Auth</option>
+                            <option value="form">Form fields</option>
+                            <option value="json">JSON Payload</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="http-method">HTTP Method</label>
+                        <select id="http-method">
+                            <option value="post">POST</option>
+                            <option value="get">GET</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="row-group">
+                    <div class="form-group">
+                        <label for="user-field">User field name</label>
+                        <input type="text" id="user-field" value="username">
+                    </div>
+                    <div class="form-group">
+                        <label for="pass-field">Pass field name</label>
+                        <input type="text" id="pass-field" value="password">
+                    </div>
+                </div>
+                <div class="row-group">
+                    <div class="form-group">
+                        <label for="success-str">Success Indicator (body string)</label>
+                        <input type="text" id="success-str" placeholder="e.g. Welcome">
+                    </div>
+                    <div class="form-group">
+                        <label for="fail-str">Failure Indicator (body string)</label>
+                        <input type="text" id="fail-str" placeholder="e.g. Invalid">
+                    </div>
+                </div>
+            </div>
+
+            <div class="row-group">
+                <div class="form-group">
+                    <label for="concurrency">Concurrency</label>
+                    <input type="number" id="concurrency" value="10" min="1">
+                </div>
+                <div class="form-group">
+                    <label for="rate-limit">Rate Limit (req/sec, optional)</label>
+                    <input type="number" id="rate-limit" placeholder="Unlimited">
+                </div>
+            </div>
+
+            <button id="btn-action" class="btn">Start Attack</button>
+        </div>
+
+        <!-- Monitoring Card -->
+        <div class="card">
+            <div style="font-size: 16px; font-weight: bold; border-bottom: 1px solid var(--border-color); padding-bottom: 5px;">ATTACK STATUS</div>
+            
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <label>Status</label>
+                    <div id="stat-status" class="stat-val" style="color: var(--text-muted);">IDLE</div>
+                </div>
+                <div class="stat-card">
+                    <label>Total tried</label>
+                    <div id="stat-total" class="stat-val">0</div>
+                </div>
+                <div class="stat-card">
+                    <label>Successes</label>
+                    <div id="stat-success" class="stat-val" style="color: var(--success-color);">0</div>
+                </div>
+                <div class="stat-card">
+                    <label>Blocked</label>
+                    <div id="stat-blocked" class="stat-val" style="color: var(--warning-color);">0</div>
+                </div>
+            </div>
+
+            <label>Live Output Logs</label>
+            <div id="log-console" class="console">Console initialized. Ready to begin attack...</div>
+        </div>
+    </div>
+
+    <script>
+        const protocolSelect = document.getElementById('protocol');
+        const httpOptions = document.getElementById('http-options');
+        const inputModeSelect = document.getElementById('input-mode');
+        const btnAction = document.getElementById('btn-action');
+        const logConsole = document.getElementById('log-console');
+
+        // Dynamic visibility
+        protocolSelect.addEventListener('change', () => {
+            if (protocolSelect.value === 'http') {
+                httpOptions.classList.remove('hidden');
+            } else {
+                httpOptions.classList.add('hidden');
+            }
+        });
+
+        inputModeSelect.addEventListener('change', () => {
+            const mode = inputModeSelect.value;
+            document.getElementById('group-manual').classList.add('hidden');
+            document.getElementById('group-lists').classList.add('hidden');
+            document.getElementById('group-combo').classList.add('hidden');
+
+            if (mode === 'manual') {
+                document.getElementById('group-manual').classList.remove('hidden');
+            } else if (mode === 'lists') {
+                document.getElementById('group-lists').classList.remove('hidden');
+            } else if (mode === 'combo') {
+                document.getElementById('group-combo').classList.remove('hidden');
+            }
+        });
+
+        let eventSource = null;
+
+        function addLog(text, color = null) {
+            const span = document.createElement('span');
+            span.textContent = text + '\n';
+            if (color) {
+                span.style.color = color;
+            }
+            logConsole.appendChild(span);
+            logConsole.scrollTop = logConsole.scrollHeight;
+        }
+
+        btnAction.addEventListener('click', async () => {
+            if (eventSource) {
+                // Stop action
+                eventSource.close();
+                eventSource = null;
+                btnAction.textContent = 'Start Attack';
+                btnAction.classList.remove('btn-stop');
+                document.getElementById('stat-status').textContent = 'STOPPED';
+                document.getElementById('stat-status').style.color = 'var(--error-color)';
+                addLog('Attack stopped by user.', 'var(--error-color)');
+                return;
+            }
+
+            // Gather inputs
+            const config = {
+                protocol: protocolSelect.value,
+                target: document.getElementById('target').value,
+                username: document.getElementById('username').value || null,
+                password: document.getElementById('password').value || null,
+                usernames_list: document.getElementById('usernames-list').value || null,
+                passwords_list: document.getElementById('passwords-list').value || null,
+                combos_list: document.getElementById('combos-list').value || null,
+                input_mode: inputModeSelect.value,
+                concurrency: parseInt(document.getElementById('concurrency').value) || 10,
+                rate_limit: parseInt(document.getElementById('rate-limit').value) || null,
+                http_mode: document.getElementById('http-mode').value,
+                http_method: document.getElementById('http-method').value,
+                user_field: document.getElementById('user-field').value,
+                pass_field: document.getElementById('pass-field').value,
+                success_str: document.getElementById('success-str').value || null,
+                fail_str: document.getElementById('fail-str').value || null,
+            };
+
+            if (!config.target) {
+                alert('Please enter a target!');
+                return;
+            }
+
+            // Reset UI
+            logConsole.innerHTML = '';
+            document.getElementById('stat-status').textContent = 'RUNNING';
+            document.getElementById('stat-status').style.color = 'var(--accent-color)';
+            document.getElementById('stat-total').textContent = '0';
+            document.getElementById('stat-success').textContent = '0';
+            document.getElementById('stat-blocked').textContent = '0';
+            btnAction.textContent = 'Stop Attack';
+            btnAction.classList.add('btn-stop');
+
+            addLog('Starting attack configuration request...');
+
+            try {
+                const response = await fetch('/api/start', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(config)
+                });
+
+                if (!response.ok) {
+                    const err = await response.text();
+                    addLog(`Error starting attack: ${err}`, 'var(--error-color)');
+                    resetUI();
+                    return;
+                }
+
+                addLog('Connecting real-time logs stream...');
+                
+                // SSE Stream
+                eventSource = new EventSource('/api/stream');
+                eventSource.onmessage = (event) => {
+                    const data = JSON.parse(event.data);
+                    if (data.type === 'log') {
+                        let color = null;
+                        if (data.message.includes('SUCCESS')) color = 'var(--success-color)';
+                        else if (data.message.includes('BLOCKED')) color = 'var(--warning-color)';
+                        else if (data.message.includes('Error')) color = 'var(--error-color)';
+                        addLog(data.message, color);
+                    } else if (data.type === 'stats') {
+                        document.getElementById('stat-total').textContent = data.total;
+                        document.getElementById('stat-success').textContent = data.success;
+                        document.getElementById('stat-blocked').textContent = data.blocked;
+                    } else if (data.type === 'finish') {
+                        addLog('Attack finished.', 'var(--success-color)');
+                        document.getElementById('stat-status').textContent = 'FINISHED';
+                        document.getElementById('stat-status').style.color = 'var(--success-color)';
+                        resetUI();
+                    }
+                };
+
+                eventSource.onerror = (err) => {
+                    addLog('Connection closed or error occurred.', 'var(--text-muted)');
+                    resetUI();
+                };
+
+            } catch (err) {
+                addLog(`Network error: ${err}`, 'var(--error-color)');
+                resetUI();
+            }
+        });
+
+        function resetUI() {
+            if (eventSource) {
+                eventSource.close();
+                eventSource = null;
+            }
+            btnAction.textContent = 'Start Attack';
+            btnAction.classList.remove('btn-stop');
+        }
+    </script>
+</body>
+</html>

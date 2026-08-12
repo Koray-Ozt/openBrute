@@ -39,12 +39,12 @@ enum HttpMethod {
 #[command(author, version, about = "openBrute - Modern, High-Performance Multi-Protocol Brute Force Tool", long_about = None)]
 struct Args {
     /// Protocol to target
-    #[arg(short, long, value_enum)]
-    protocol: Protocol,
+    #[arg(short, long, value_enum, required_unless_present = "web")]
+    protocol: Option<Protocol>,
 
     /// Target host, IP, URL or connection string (e.g. http://localhost/login)
-    #[arg(short, long)]
-    target: String,
+    #[arg(short, long, required_unless_present = "web")]
+    target: Option<String>,
 
     /// Single username to test
     #[arg(short, long)]
@@ -105,6 +105,14 @@ struct Args {
     /// Substring indicating failed auth in HTTP response body
     #[arg(long)]
     fail_str: Option<String>,
+
+    /// Start web dashboard interface
+    #[arg(long)]
+    web: bool,
+
+    /// Web server port
+    #[arg(long, default_value_t = 3000)]
+    web_port: u16,
 }
 
 #[tokio::main]
@@ -116,6 +124,18 @@ async fn main() -> anyhow::Result<()> {
     tracing::subscriber::set_global_default(subscriber)?;
 
     let args = Args::parse();
+
+    if args.web {
+        let port = args.web_port;
+        let addr = std::net::SocketAddr::from(([127, 0, 0, 1], port));
+        let listener = tokio::net::TcpListener::bind(addr).await?;
+        info!("openBrute Web Dashboard running at http://{}", addr);
+        axum::serve(listener, openbrute::web::app()).await?;
+        return Ok(());
+    }
+
+    let target = args.target.as_ref().ok_or_else(|| anyhow::anyhow!("Target is required when not running in web mode"))?;
+    let protocol = args.protocol.as_ref().ok_or_else(|| anyhow::anyhow!("Protocol is required when not running in web mode"))?;
 
     // Determine credential source
     let source = if let Some(ref combo_path) = args.combo_file {
@@ -148,7 +168,7 @@ async fn main() -> anyhow::Result<()> {
     info!("Loaded {} total login attempts to try.", source.total_attempts());
 
     // Select target protocol handler
-    let target_handler: Arc<dyn BruteTarget> = match args.protocol {
+    let target_handler: Arc<dyn BruteTarget> = match protocol {
         Protocol::Http => {
             let http_method = match args.http_method {
                 HttpMethod::Get => TargetHttpMethod::Get,
@@ -169,12 +189,12 @@ async fn main() -> anyhow::Result<()> {
                     fail_str: args.fail_str.clone(),
                 },
             };
-            Arc::new(HttpTarget::new(&args.target, http_method, http_mode)?)
+            Arc::new(HttpTarget::new(target, http_method, http_mode)?)
         }
-        Protocol::Ssh => Arc::new(SshTarget::new(&args.target)?),
-        Protocol::Ftp => Arc::new(FtpTarget::new(&args.target)?),
-        Protocol::Smtp => Arc::new(SmtpTarget::new(&args.target)?),
-        Protocol::Sql => Arc::new(SqlTarget::new(&args.target)?),
+        Protocol::Ssh => Arc::new(SshTarget::new(target)?),
+        Protocol::Ftp => Arc::new(FtpTarget::new(target)?),
+        Protocol::Smtp => Arc::new(SmtpTarget::new(target)?),
+        Protocol::Sql => Arc::new(SqlTarget::new(target)?),
     };
 
     let config = OrchestratorConfig {
@@ -185,7 +205,7 @@ async fn main() -> anyhow::Result<()> {
 
     let orchestrator = Orchestrator::new(config, target_handler);
 
-    info!("Starting brute force attack against: {}", args.target);
+    info!("Starting brute force attack against: {}", target);
     let report = orchestrator.run(source).await?;
     info!("Attack finished.");
 

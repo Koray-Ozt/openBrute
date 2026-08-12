@@ -20,3 +20,7 @@ tracing-subscriber = { version = "0.3", features = ["env-filter"] }
 futures-util = "0.3"
 url = "2.5"
 serde_json = "1.0"
+axum = { version = "0.7", features = ["tokio"] }
+serde = { version = "1.0", features = ["derive"] }
+tower = { version = "0.4", features = ["util"] }
+tokio-stream = { version = "0.1", features = ["sync"] }
