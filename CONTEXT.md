@@ -23,5 +23,11 @@ Bu dosya Agy'nin uzun süreli hafızasıdır. Agy, projede yapılan önemli değ
   - `suppaftp` (FTP)
   - `lettre` (SMTP)
   - `sqlx` (MySQL/PostgreSQL)
-  - `url` & `serde_json` (Yardımcı kütüphaneler)
   - `thiserror` & `anyhow` (Hata yönetimi)
+
+### [12.08.2026] Cilalama ve GitHub Üzerinde Yayınlama
+- **Yapılan İşlem**: 
+  - Gelişmiş bir `.gitignore` dosyası oluşturuldu.
+  - Apache License 2.0 lisans dosyası (`LICENSE`) eklendi.
+  - Görsellerle zenginleştirilmiş, örnek komutlar içeren detaylı bir `README.md` hazırlandı.
+  - Proje git ile commit edildi ve `gh` (GitHub CLI) kullanılarak [Koray-Ozt/openBrute](https://github.com/Koray-Ozt/openBrute) deposu oluşturulup kodlar başarıyla GitHub'a yüklendi.
