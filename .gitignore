@@ -1,0 +1,23 @@
+# Compiled files
+/target/
+
+# Backup files
+**/*.rs.bk
+
+# IDE and Editor configurations
+.idea/
+.vscode/
+*.iml
+*.sublime-project
+*.sublime-workspace
+.cargo/config.toml
+
+# Operating System files
+.DS_Store
+Thumbs.db
+db.json
+
+# Local environment configs
+.env
+.env.local
+.env.*.local
