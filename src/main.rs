@@ -62,6 +62,10 @@ struct Args {
     #[arg(short = 'P', long)]
     passwords_file: Option<PathBuf>,
 
+    /// Path to a credential combo file (username:password format per line)
+    #[arg(short = 'C', long)]
+    combo_file: Option<PathBuf>,
+
     /// Concurrency level (max worker tasks)
     #[arg(short, long, default_value_t = 10)]
     concurrency: usize,
@@ -114,29 +118,33 @@ async fn main() -> anyhow::Result<()> {
     let args = Args::parse();
 
     // Determine credential source
-    let usernames = if let Some(ref u) = args.username {
-        vec![u.clone()]
-    } else if let Some(ref path) = args.usernames_file {
-        read_file_lines(path).await?
+    let source = if let Some(ref combo_path) = args.combo_file {
+        CredentialSource::new_combo(combo_path).await?
     } else {
-        anyhow::bail!("Must specify either a single username (-u) or a usernames wordlist (-U)");
-    };
+        let usernames = if let Some(ref u) = args.username {
+            vec![u.clone()]
+        } else if let Some(ref path) = args.usernames_file {
+            read_file_lines(path).await?
+        } else {
+            anyhow::bail!("Must specify either a single username (-u), a usernames wordlist (-U), or a combo file (-C)");
+        };
 
-    let passwords = if let Some(ref p) = args.password {
-        vec![p.clone()]
-    } else if let Some(ref path) = args.passwords_file {
-        read_file_lines(path).await?
-    } else {
-        anyhow::bail!("Must specify either a single password (-p) or a passwords wordlist (-P)");
-    };
+        let passwords = if let Some(ref p) = args.password {
+            vec![p.clone()]
+        } else if let Some(ref path) = args.passwords_file {
+            read_file_lines(path).await?
+        } else {
+            anyhow::bail!("Must specify either a single password (-p), a passwords wordlist (-P), or a combo file (-C)");
+        };
 
-    let mode = if args.one_to_one {
-        WordlistMode::OneToOne
-    } else {
-        WordlistMode::Cartesian
-    };
+        let mode = if args.one_to_one {
+            WordlistMode::OneToOne
+        } else {
+            WordlistMode::Cartesian
+        };
 
-    let source = CredentialSource::from_lists(usernames, passwords, mode);
+        CredentialSource::from_lists(usernames, passwords, mode)
+    };
     info!("Loaded {} total login attempts to try.", source.total_attempts());
 
     // Select target protocol handler
